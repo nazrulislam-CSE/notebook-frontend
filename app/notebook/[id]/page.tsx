@@ -9,7 +9,6 @@ export default function NotebookDetails() {
   const router = useRouter();
   const params = useParams();
   const id = params.id;
-
   const [notebook, setNotebook] = useState<any>(null);
 
   useEffect(() => {
