@@ -3,16 +3,21 @@ import { useEffect, useState } from "react";
 import { fetchData } from './fetchData';
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
-
+import axios from "axios";
+import { toast, ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 export default function Home() {
   const [notebooks, setNotebooks] = useState<any[]>([]);
   const [search, setSearch] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage, setItemsPerPage] = useState(5);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
+
+  const [showModal, setShowModal] = useState(false);
+  const [deletingNotebook, setDeletingNotebook] = useState<any | null>(null);
 
   const pathname = usePathname();
-  const isActive = pathname === '/notebook'
+  const isActive = pathname === '/notebook';
 
   useEffect(() => {
     const loadData = async () => {
@@ -48,8 +53,50 @@ export default function Home() {
     setCurrentPage(pageNumber);
   };
 
+  const handleDelete = async () => {
+    if (!deletingNotebook) return;
+    try {
+      const response = await axios.delete(`http://localhost:8000/api/notebooks/${deletingNotebook.id}`);
+      if (response.status === 200) {
+        toast.success("Notebook deleted successfully!");
+        setNotebooks(notebooks.filter((n) => n.id !== deletingNotebook.id));
+        setShowModal(false);
+        setDeletingNotebook(null);
+      } else {
+        toast.error("Failed to delete notebook.");
+      }
+    } catch (error) {
+      toast.error("An error occurred while deleting.");
+    }
+  };
+
+  const openDeleteModal = (notebook: any) => {
+    setDeletingNotebook(notebook);
+    setShowModal(true);
+  };
+
+  const closeDeleteModal = () => {
+    setShowModal(false);
+    setDeletingNotebook(null);
+  };
+
+  const formatDate = (date: string) => {
+    const options = {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: false, 
+    };
+    const formattedDate = new Date(date).toLocaleString('en-GB', options);
+    return formattedDate;
+  };
+
   return (
     <div className="container py-5">
+      <ToastContainer />
       <main className="flex flex-col gap-32 items-center">
         <div className="card shadow-lg w-100">
           <div className="card-header d-flex justify-content-between align-items-center bg-success text-light">
@@ -66,10 +113,10 @@ export default function Home() {
                   value={itemsPerPage}
                   onChange={handleItemsPerPageChange}
                 >
-                  <option value={5}>5 per page</option>
                   <option value={10}>10 per page</option>
                   <option value={20}>20 per page</option>
                   <option value={50}>50 per page</option>
+                  <option value={100}>100 per page</option>
                 </select>
               </div>
               <div className="w-40">
@@ -89,13 +136,15 @@ export default function Home() {
                   <th scope="col">Sl</th>
                   <th scope="col">Title</th>
                   <th scope="col">Description</th>
+                  <th scope="col">Created At</th>
+                  <th scope="col">Updated At</th>
                   <th scope="col" className="text-end">Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {paginatedNotebooks.length === 0 ? (
                   <tr>
-                    <td colSpan={4}>No notebooks found</td>
+                    <td colSpan={6}>No notebooks found</td>
                   </tr>
                 ) : (
                   paginatedNotebooks.map((notebook: any, index: number) => (
@@ -103,14 +152,20 @@ export default function Home() {
                       <td>{(currentPage - 1) * itemsPerPage + index + 1}</td>
                       <td>{notebook.title}</td>
                       <td>{notebook.description || "No description"}</td>
+                      <td>{formatDate(notebook.created_at)}</td>
+                      <td>{formatDate(notebook.updated_at)}</td>
                       <td className="text-end">
-                        <button className="btn btn-sm btn-info me-2" title="View">
+                        <Link href={`/notebook/${notebook.id}`} className="btn btn-sm btn-info me-2" title="View">
                           <i className="fas fa-eye"></i>
-                        </button>
-                        <button className="btn btn-sm btn-warning me-2" title="Edit">
+                        </Link>
+                        <Link href={`/notebook/${notebook.id}/edit`} className="btn btn-sm btn-warning me-2" title="Edit">
                           <i className="fas fa-edit"></i>
-                        </button>
-                        <button className="btn btn-sm btn-danger" title="Delete">
+                        </Link>
+                        <button
+                          className="btn btn-sm btn-danger"
+                          title="Delete"
+                          onClick={() => openDeleteModal(notebook)}
+                        >
                           <i className="fas fa-trash"></i>
                         </button>
                       </td>
@@ -160,6 +215,27 @@ export default function Home() {
           </div>
         </div>
       </main>
+
+      {/* Delete Confirmation Modal */}
+      {showModal && (
+        <div className="modal show fade d-block" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }} onClick={closeDeleteModal}>
+          <div className="modal-dialog" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-content">
+              <div className="modal-header">
+                <h5 className="modal-title">Confirm Delete</h5>
+                <button type="button" className="btn-close" onClick={closeDeleteModal}></button>
+              </div>
+              <div className="modal-body">
+                Are you sure you want to delete <strong>{deletingNotebook?.title}</strong>?
+              </div>
+              <div className="modal-footer">
+                <button type="button" className="btn btn-secondary" onClick={closeDeleteModal}>Cancel</button>
+                <button type="button" className="btn btn-danger" onClick={handleDelete}>Delete</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
