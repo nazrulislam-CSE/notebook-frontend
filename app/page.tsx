@@ -80,19 +80,7 @@ export default function Home() {
     setDeletingNotebook(null);
   };
 
-  const formatDate = (date: string) => {
-    const options = {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-      second: '2-digit',
-      hour12: false, 
-    };
-    const formattedDate = new Date(date).toLocaleString('en-GB', options);
-    return formattedDate;
-  };
+  
 
   return (
     <div className="container py-5">
@@ -136,8 +124,6 @@ export default function Home() {
                   <th scope="col">Sl</th>
                   <th scope="col">Title</th>
                   <th scope="col">Description</th>
-                  <th scope="col">Created At</th>
-                  <th scope="col">Updated At</th>
                   <th scope="col" className="text-end">Actions</th>
                 </tr>
               </thead>
@@ -152,8 +138,6 @@ export default function Home() {
                       <td>{(currentPage - 1) * itemsPerPage + index + 1}</td>
                       <td>{notebook.title}</td>
                       <td>{notebook.description || "No description"}</td>
-                      <td>{formatDate(notebook.created_at)}</td>
-                      <td>{formatDate(notebook.updated_at)}</td>
                       <td className="text-end">
                         <Link href={`/notebook/${notebook.id}`} className="btn btn-sm btn-info me-2" title="View">
                           <i className="fas fa-eye"></i>
