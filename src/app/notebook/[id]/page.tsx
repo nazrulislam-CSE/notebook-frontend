@@ -2,23 +2,28 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { fetchData } from "../../fetchData";
 import Link from 'next/link';
+import { apiPost, apiGet, apiPut } from "@/src/lib/api";
 
 export default function NotebookDetails() {
   const router = useRouter();
   const params = useParams();
-  const id = params.id;
+  const id = params?.id; 
   const [notebook, setNotebook] = useState<any>(null);
 
   useEffect(() => {
-    if (id) {
-      const loadData = async () => {
-        const data = await fetchData(`notebooks/${id}`);
-        setNotebook(data);
-      };
-      loadData();
-    }
+    const loadData = async () => {
+      if (id) {
+        try {
+          const response = await apiGet(`/notebooks/${id}`);
+          setNotebook(response?.data);
+        } catch (error) {
+          console.error("Failed to fetch notebook:", error);
+        }
+      }
+    };
+
+    loadData();
   }, [id]);
 
   if (!notebook) return <p>Loading...</p>;

@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import axios from "axios";
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import { apiPost, apiGet, apiPut } from "@/src/lib/api";
 
 export default function AddNotebook() {
   const router = useRouter();
@@ -17,7 +18,7 @@ export default function AddNotebook() {
     setLoading(true);
 
     try {
-      const response = await axios.post("http://localhost:8000/api/notebooks", {
+      const response = await apiPost("/notebooks", {
         title: title.trim(),
         description: description.trim(),
       });

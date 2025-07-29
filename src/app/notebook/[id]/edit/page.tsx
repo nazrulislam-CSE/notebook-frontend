@@ -2,58 +2,59 @@
 
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { fetchData } from "../../../fetchData";
-import axios from "axios";
+import Link from "next/link";
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
-import Link from 'next/link';
+import { apiGet, apiPut } from "@/src/lib/api";
 
 export default function EditNotebook() {
   const router = useRouter();
-  const { id } = useParams();
+  const params = useParams();
+  const id = params?.id;
 
-  const [notebook, setNotebook] = useState<any>(null);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    if (id) {
-      const loadData = async () => {
-        const data = await fetchData(`notebooks/${id}`);
-        setNotebook(data);
-        setTitle(data.title);
-        setDescription(data.description);
-      };
-      loadData();
-    }
+    const loadData = async () => {
+      try {
+        const response = await apiGet(`/notebooks/${id}`);
+        const data = response?.data;
+        setTitle(data?.title || "");
+        setDescription(data?.description || "");
+      } catch (error) {
+        toast.error("Failed to load notebook data.");
+        console.error("Fetch error:", error);
+      }
+    };
+
+    if (id) loadData();
   }, [id]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
 
     try {
-      const response = await axios.put(`http://localhost:8000/api/notebooks/${id}`, {
-        title,
-        description,
+      const response = await apiPut(`/notebooks/${id}`, {
+        title: title.trim(),
+        description: description.trim(),
       });
 
       if (response.status === 200) {
         toast.success("Notebook updated successfully!");
-        router.push(`/`);
+        router.push("/");
       } else {
-        toast.error(response.data?.message || "Failed to update notebook.");
+        toast.error(response?.data?.message || "Update failed.");
       }
     } catch (error: any) {
-      console.error("Error updating notebook:", error);
-      toast.error(error.response?.data?.message || "An error occurred.");
+      console.error("Update error:", error);
+      toast.error(error?.response?.data?.message || "An error occurred.");
     } finally {
       setLoading(false);
     }
   };
-
-  if (!notebook) return <p>Loading...</p>;
 
   return (
     <div className="container py-5">

@@ -1,28 +1,32 @@
 "use client";
+
 import { useEffect, useState } from "react";
-import { fetchData } from './fetchData';
-import { usePathname } from 'next/navigation';
-import Link from 'next/link';
-import axios from "axios";
-import { toast, ToastContainer } from 'react-toastify';
+import { usePathname } from "next/navigation";
+import Link from "next/link";
+import { toast, ToastContainer } from "react-toastify";
 import 'react-toastify/dist/ReactToastify.css';
+import { apiGet, apiDelete } from "@/src/lib/api";
 
 export default function Home() {
   const [notebooks, setNotebooks] = useState<any[]>([]);
   const [search, setSearch] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
-
   const [showModal, setShowModal] = useState(false);
   const [deletingNotebook, setDeletingNotebook] = useState<any | null>(null);
 
   const pathname = usePathname();
-  const isActive = pathname === '/notebook';
+  const isActive = pathname === "/notebook";
 
   useEffect(() => {
     const loadData = async () => {
-      const data = await fetchData("notebooks");
-      setNotebooks(data);
+      try {
+        const response = await apiGet("/notebooks");
+        setNotebooks(response?.data || []);
+      } catch (error) {
+        toast.error("Failed to load notebooks.");
+        console.error(error);
+      }
     };
     loadData();
   }, []);
@@ -55,18 +59,19 @@ export default function Home() {
 
   const handleDelete = async () => {
     if (!deletingNotebook) return;
+
     try {
-      const response = await axios.delete(`http://localhost:8000/api/notebooks/${deletingNotebook.id}`);
+      const response = await apiDelete(`/notebooks/${deletingNotebook.id}`);
       if (response.status === 200) {
         toast.success("Notebook deleted successfully!");
         setNotebooks(notebooks.filter((n) => n.id !== deletingNotebook.id));
-        setShowModal(false);
-        setDeletingNotebook(null);
+        closeDeleteModal();
       } else {
         toast.error("Failed to delete notebook.");
       }
     } catch (error) {
       toast.error("An error occurred while deleting.");
+      console.error(error);
     }
   };
 
@@ -79,9 +84,7 @@ export default function Home() {
     setShowModal(false);
     setDeletingNotebook(null);
   };
-
   
-
   return (
     <div className="container py-5">
       <ToastContainer />
